@@ -1,6 +1,8 @@
 .git
 .gitignore
 .assetsignore
+.wrangler
 node_modules
 *.md
+_shot.html
 wrangler.jsonc
