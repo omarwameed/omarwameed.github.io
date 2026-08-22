@@ -1,0 +1,8 @@
+{
+  // Static portfolio on Cloudflare Workers (assets only, no server code).
+  "name": "omar-wameed",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./"
+  }
+}
