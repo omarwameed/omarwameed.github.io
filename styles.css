@@ -381,7 +381,10 @@ html[lang="en"] .sec-title { letter-spacing: -.015em; line-height: 1.15; }
 
 .skill-row dt { font-weight: 600; font-size: 16px; }
 .skill-row dd { color: var(--muted); font-size: 15.5px; }
-html[lang="ar"] .skill-row dd { unicode-bidi: plaintext; }
+/* A row starting with a Latin word ("Git, GitHub, ...") flipped the whole
+   line to LTR under `plaintext`. `isolate` keeps the paragraph RTL and only
+   isolates the embedded Latin runs, which is what mixed Arabic text needs. */
+html[lang="ar"] .skill-row dd { unicode-bidi: isolate; }
 
 /* ---------------- experience ---------------- */
 
