@@ -290,6 +290,16 @@ html[lang="en"] .sec-title { letter-spacing: -.015em; line-height: 1.15; }
   max-width: 55ch;
 }
 
+.sec-note {
+  margin-block-start: 16px;
+  padding-inline-start: 13px;
+  border-inline-start: 2px solid var(--accent);
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.7;
+  max-width: 52ch;
+}
+
 /* ---------------- projects ---------------- */
 
 .projects { padding-block: clamp(48px, 7vw, 84px); border-block-start: 1px solid var(--line-soft); }

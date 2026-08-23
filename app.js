@@ -26,6 +26,7 @@
 
     projTitle: "Live projects",
     projSub: "Both are published on the web. Open one and try it before you read about it.",
+    projNote: "These are management systems built for large screens, so open them on a desktop for the best experience.",
     ctaOpen: "Open the site",
     ariaTech: "Technologies",
 
