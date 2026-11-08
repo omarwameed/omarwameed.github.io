@@ -13,7 +13,7 @@
 <link rel="preload" href="fonts/IBMPlexSansArabic-400-arabic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/IBMPlexSansArabic-700-arabic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=2026-11-08d">
+<link rel="stylesheet" href="styles.css?v=2026-11-08j">
 </head>
 <body>
 
@@ -231,6 +231,71 @@
     </div>
   </section>
 
+  <!-- TOOLS: what I actually use, each with a one-line reason -->
+  <section id="tools" class="tools">
+    <div class="wrap">
+      <h2 class="sec-title reveal" data-i18n="toolsTitle">أدوات أعتمد عليها</h2>
+      <p class="sec-sub reveal" data-i18n="toolsSub">اللي أفتحها كل يوم، وأنصح بيها بدون تردد.</p>
+
+      <ul class="tool-grid">
+        <li class="tool-card reveal">
+          <a href="https://claude.ai" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">Claude</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagAi">ذكاء اصطناعي</span>
+              <span class="tool-why" data-i18n="whyClaude">شريكي بالبرمجة وتتبّع الأخطاء، من أول فكرة لآخر تعديل.</span>
+            </span>
+          </a>
+        </li>
+        <li class="tool-card reveal">
+          <a href="https://chatgpt.com" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">ChatGPT</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagAi">ذكاء اصطناعي</span>
+              <span class="tool-why" data-i18n="whyChatgpt">للتخطيط والأسئلة السريعة قبل ما أبدي أكتب.</span>
+            </span>
+          </a>
+        </li>
+        <li class="tool-card reveal">
+          <a href="https://github.com" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">GitHub</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagDev">أدوات المطوّر</span>
+              <span class="tool-why" data-i18n="whyGithub">كل الكود هنا، وهذا الموقع نفسه منشور منه.</span>
+            </span>
+          </a>
+        </li>
+        <li class="tool-card reveal">
+          <a href="https://www.cloudflare.com" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">Cloudflare</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagHost">استضافة</span>
+              <span class="tool-why" data-i18n="whyCloudflare">يستضيف النظامين اللي فوق، سريعين وشغّالين طول الوقت.</span>
+            </span>
+          </a>
+        </li>
+        <li class="tool-card reveal">
+          <a href="https://vercel.com" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">Vercel</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagHost">استضافة</span>
+              <span class="tool-why" data-i18n="whyVercel">ارفع موقع صغير، وبدقيقة يصير على الإنترنت.</span>
+            </span>
+          </a>
+        </li>
+        <li class="tool-card reveal">
+          <a href="https://obsidian.md" target="_blank" rel="noopener">
+            <span class="tool-stage"><span class="tool-word" dir="ltr">Obsidian</span></span>
+            <span class="tool-body">
+              <span class="tool-tag" data-i18n="tagNotes">ملاحظات</span>
+              <span class="tool-why" data-i18n="whyObsidian">دفتر كل مشروع: القرارات، المشاكل، وشلون انحلّت.</span>
+            </span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
   <!-- CONTACT -->
   <section id="contact" class="contact">
     <div class="wrap contact-in">
@@ -238,14 +303,36 @@
       <p class="contact-sub reveal" data-i18n="contactSub">سواء تحتاج أحد يرجّع أجهزة المكتب تشتغل، لو مطوّر ينضم لفريقك ويبني واجهة نظامك، اكتبلي من أي طريق تحت.</p>
 
       <div class="contact-grid reveal">
-        <a class="cbox" href="mailto:omar.wamed.2003@gmail.com">
-          <span class="cbox-k" data-i18n="cEmail">البريد</span>
-          <span class="cbox-v" dir="ltr">omar.wamed.2003@gmail.com</span>
-        </a>
-        <a class="cbox" href="https://wa.me/9647728405217" target="_blank" rel="noopener">
-          <span class="cbox-k" data-i18n="cPhone">واتساب</span>
-          <span class="cbox-v" dir="ltr">+964 772 840 5217</span>
-        </a>
+        <!-- Boxes with a copy button: a button can't live inside a link, so the
+             box is a div, the link is stretched over it, the button sits above. -->
+        <div class="cbox has-copy">
+          <a class="cbox-link" href="mailto:omar.wamed.2003@gmail.com">
+            <span class="cbox-k" data-i18n="cEmail">البريد</span>
+            <span class="cbox-v" dir="ltr">omar.wamed.2003@gmail.com</span>
+          </a>
+          <button type="button" class="copy" data-copy="omar.wamed.2003@gmail.com">
+            <svg class="ic-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg>
+            <svg class="ic-done" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span class="copy-label" data-i18n="copyIdle">نسخ</span>
+            <span hidden data-i18n="copyIdle">نسخ</span>
+            <span hidden data-i18n="copyDone">تم النسخ</span>
+            <span hidden data-i18n="copyFail">ما انسخ</span>
+          </button>
+        </div>
+        <div class="cbox has-copy">
+          <a class="cbox-link" href="https://wa.me/9647728405217" target="_blank" rel="noopener">
+            <span class="cbox-k" data-i18n="cPhone">واتساب</span>
+            <span class="cbox-v" dir="ltr">+964 772 840 5217</span>
+          </a>
+          <button type="button" class="copy" data-copy="+9647728405217">
+            <svg class="ic-copy" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8"/></svg>
+            <svg class="ic-done" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+            <span class="copy-label" data-i18n="copyIdle">نسخ</span>
+            <span hidden data-i18n="copyIdle">نسخ</span>
+            <span hidden data-i18n="copyDone">تم النسخ</span>
+            <span hidden data-i18n="copyFail">ما انسخ</span>
+          </button>
+        </div>
         <a class="cbox" href="https://www.linkedin.com/in/omar-wameedh-7b485b299" target="_blank" rel="noopener">
           <span class="cbox-k">LinkedIn</span>
           <span class="cbox-v" dir="ltr">omar-wameedh</span>
@@ -255,6 +342,7 @@
           <span class="cbox-v" dir="ltr">omarwameed</span>
         </a>
       </div>
+      <p class="sr-only" id="copyStatus" aria-live="polite"></p>
 
       <a class="btn btn-primary btn-lg reveal" href="Omar_Wameed_Resume.pdf" download data-i18n="ctaCv">نزّل السيرة الذاتية</a>
     </div>
@@ -304,6 +392,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=2026-11-08d"></script>
+<script src="app.js?v=2026-11-08j"></script>
 </body>
 </html>

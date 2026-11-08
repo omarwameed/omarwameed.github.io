@@ -85,6 +85,23 @@
     lbAria: "Certificate view",
     lbClose: "Close",
 
+    toolsTitle: "Tools I rely on",
+    toolsSub: "The ones I open every day and recommend without hesitation.",
+    tagAi: "AI",
+    tagDev: "Developer tools",
+    tagHost: "Hosting",
+    tagNotes: "Notes",
+    whyClaude: "My partner for coding and debugging, from the first idea to the last fix.",
+    whyChatgpt: "For planning and quick questions before I start writing.",
+    whyGithub: "All my code lives here, and this site is published from it.",
+    whyCloudflare: "Hosts both systems above, fast and always on.",
+    whyVercel: "Push a small site, and a minute later it's live.",
+    whyObsidian: "Every project's notebook: decisions, problems, and how they got solved.",
+
+    copyIdle: "Copy",
+    copyDone: "Copied",
+    copyFail: "Couldn't copy",
+
     contactTitle: "Got a fault or an idea? Message me.",
     contactSub: "Whether you need someone to get the office machines running again, or a developer to join your team and build your system's front-end, reach me any way below.",
     cEmail: "Email",
@@ -228,6 +245,84 @@
     lb.addEventListener("cancel", unlockScroll);
     lb.addEventListener("close", unlockScroll);
   }
+
+  /* ---------- copy buttons (email, phone) ----------
+     The label is swapped in place and the button eases from its old width
+     to the new one. Labels come from hidden spans in the button, so they
+     follow the language switch like every other string. */
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      /* the async API can refuse (no focus, no permission): fall back */
+      return navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
+    }
+    return legacyCopy(text);
+  }
+
+  function legacyCopy(text) {
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove();
+      if (ok) resolve(); else reject();
+    });
+  }
+
+  function setLabel(btn, text) {
+    var label = btn.querySelector(".copy-label");
+    var from = btn.offsetWidth;
+    label.textContent = text;
+    btn.style.width = "auto";
+    var to = btn.offsetWidth;
+    btn.style.width = from + "px";
+    void btn.offsetWidth; /* commit the start width before animating */
+    btn.style.width = to + "px";
+  }
+
+  var copyStatus = document.getElementById("copyStatus");
+
+  Array.prototype.forEach.call(document.querySelectorAll(".copy"), function (btn) {
+    var timer = 0;
+    var pick = function (key) {
+      var el = btn.querySelector('[hidden][data-i18n="' + key + '"]');
+      return el ? el.textContent : "";
+    };
+
+    btn.addEventListener("transitionend", function (e) {
+      if (e.propertyName === "width" && !btn.classList.contains("is-done") && !btn.classList.contains("is-fail")) {
+        btn.style.width = "";
+      }
+    });
+
+    btn.addEventListener("click", function () {
+      clearTimeout(timer);
+      copyText(btn.getAttribute("data-copy")).then(function () {
+        btn.classList.remove("is-fail");
+        btn.classList.add("is-done");
+        setLabel(btn, pick("copyDone"));
+        if (copyStatus) copyStatus.textContent = pick("copyDone");
+      }, function () {
+        btn.classList.add("is-fail");
+        setLabel(btn, pick("copyFail"));
+        if (copyStatus) copyStatus.textContent = pick("copyFail");
+      }).then(function () {
+        timer = setTimeout(function () {
+          btn.classList.remove("is-done", "is-fail");
+          setLabel(btn, pick("copyIdle"));
+          if (copyStatus) copyStatus.textContent = "";
+          /* release the fixed width even if no transitionend fires, so a
+             later language switch can't clip the label */
+          setTimeout(function () { btn.style.width = ""; }, 320);
+        }, 1800);
+      });
+    });
+  });
 
   /* ---------- active section in the top nav and the mobile dock ----------
      A thin band across the middle of the screen decides which section is
