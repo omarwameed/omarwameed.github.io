@@ -799,40 +799,21 @@ html[lang="en"] .copy { font-family: var(--f-lat); }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
-/* Language switch: the old page turns away on its spine like a notebook
-   page, shading as it lifts, while the new page under it brightens from
-   the turn's shadow. Rotating toward the viewer: negative angle for a left
-   spine, positive for a right spine. These rules outrank the theme rule
-   above while html[data-flip] is set (only during a language switch). */
-html[data-flip]::view-transition-image-pair(root) { perspective: 2200px; }
-
-html[data-flip]::view-transition-old(root) {
-  z-index: 2;
-  backface-visibility: hidden;
-  animation: page-turn-left .78s cubic-bezier(.45, .05, .2, 1) both;
-  transform-origin: left center;
+/* Language switch curtains (created by app.js). Navy cloth with a gold
+   leading edge; faint vertical folds so it reads as fabric, not a panel.
+   Resting state is open (off screen); app.js animates them shut and back. */
+.curtain {
+  position: fixed;
+  inset-block: 0;
+  width: 50.5%;
+  z-index: 60;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 2px, transparent 2px 26px),
+    #0b1430;
 }
-html[data-flip="rtl"]::view-transition-old(root) {
-  animation-name: page-turn-right;
-  transform-origin: right center;
-}
-html[data-flip]::view-transition-new(root) {
-  z-index: 1;
-  animation: page-under .78s cubic-bezier(.45, .05, .2, 1) both;
-}
-
-@keyframes page-turn-left {
-  from { transform: rotateY(0deg); filter: brightness(1); }
-  to   { transform: rotateY(-110deg); filter: brightness(.55); }
-}
-@keyframes page-turn-right {
-  from { transform: rotateY(0deg); filter: brightness(1); }
-  to   { transform: rotateY(110deg); filter: brightness(.55); }
-}
-@keyframes page-under {
-  from { filter: brightness(.6); }
-  to   { filter: brightness(1); }
-}
+.curtain-l { left: 0; border-right: 2px solid #d8b463; transform: translateX(-101%); }
+.curtain-r { right: 0; border-left: 2px solid #d8b463; transform: translateX(101%); }
 
 /* Hero headline: words rise out of their own masks. The mask gets extra
    room above and below (and gives it back with negative margins) so Arabic

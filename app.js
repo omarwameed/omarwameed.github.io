@@ -200,32 +200,57 @@
 
   setTheme(storedTheme());
 
-  /* Language switch turns the page like a notebook. The spine follows the
-     language you are going to: English turns right-to-left (spine on the
-     left), Arabic turns left-to-right (spine on the right). CSS in
-     styles.css reads html[data-flip]. Instant without View Transitions or
-     with reduced motion (reduceMotion is defined just below; hoisted). */
-  var langTarget = null; /* same double-click guard as the theme toggle */
+  /* Language switch: two navy curtains with gold edges close from the sides,
+     the language swaps behind them, then they open. Chosen by the user over
+     ten options. Clicks during the curtain are ignored, so a double click
+     can't leave the page half switched. Instant with reduced motion
+     (reduceMotion is defined just below; var is hoisted). */
+  var curtainBusy = false;
+  var curtains = null;
+
+  function getCurtains() {
+    if (curtains) return curtains;
+    curtains = ["curtain-l", "curtain-r"].map(function (side) {
+      var el = document.createElement("div");
+      el.className = "curtain " + side;
+      el.setAttribute("aria-hidden", "true");
+      document.body.appendChild(el);
+      return el;
+    });
+    return curtains;
+  }
 
   document.getElementById("langBtn").addEventListener("click", function () {
-    var html = document.documentElement;
-    var next = (langTarget || html.getAttribute("lang")) === "en" ? "ar" : "en";
+    var next = document.documentElement.getAttribute("lang") === "en" ? "ar" : "en";
 
-    if (!document.startViewTransition || reduceMotion) {
+    if (reduceMotion || !Element.prototype.animate) {
       apply(next);
       return;
     }
+    if (curtainBusy) return;
+    curtainBusy = true;
 
-    langTarget = next;
-    html.setAttribute("data-flip", next === "en" ? "ltr" : "rtl");
-    var t = document.startViewTransition(function () { apply(next); });
-    t.finished.then(clear, clear);
-    function clear() {
-      if (langTarget === next) {
-        langTarget = null;
-        html.removeAttribute("data-flip");
-      }
-    }
+    var c = getCurtains();
+    var shut = function (el, from) {
+      return el.animate([{ transform: "translateX(" + from + ")" }, { transform: "translateX(0)" }],
+        { duration: 380, easing: "cubic-bezier(.6, 0, .3, 1)", fill: "forwards" }).finished;
+    };
+    var open = function (el, to) {
+      return el.animate([{ transform: "translateX(0)" }, { transform: "translateX(" + to + ")" }],
+        { duration: 480, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "forwards" }).finished;
+    };
+
+    Promise.all([shut(c[0], "-101%"), shut(c[1], "101%")])
+      .then(function () {
+        apply(next);
+        return new Promise(function (r) { setTimeout(r, 140); });
+      })
+      .then(function () { return Promise.all([open(c[0], "-101%"), open(c[1], "101%")]); })
+      .then(function () {
+        /* drop the finished animations; the CSS resting state is "open" */
+        c.forEach(function (el) { el.getAnimations().forEach(function (a) { a.cancel(); }); });
+        curtainBusy = false;
+      }, function () { curtainBusy = false; });
   });
 
   /* Motion is opt-out for anyone who asked their system for less of it. */
