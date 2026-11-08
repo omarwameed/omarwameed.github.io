@@ -799,6 +799,41 @@ html[lang="en"] .copy { font-family: var(--f-lat); }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
+/* Language switch: the old page turns away on its spine like a notebook
+   page, shading as it lifts, while the new page under it brightens from
+   the turn's shadow. Rotating toward the viewer: negative angle for a left
+   spine, positive for a right spine. These rules outrank the theme rule
+   above while html[data-flip] is set (only during a language switch). */
+html[data-flip]::view-transition-image-pair(root) { perspective: 2200px; }
+
+html[data-flip]::view-transition-old(root) {
+  z-index: 2;
+  backface-visibility: hidden;
+  animation: page-turn-left .78s cubic-bezier(.45, .05, .2, 1) both;
+  transform-origin: left center;
+}
+html[data-flip="rtl"]::view-transition-old(root) {
+  animation-name: page-turn-right;
+  transform-origin: right center;
+}
+html[data-flip]::view-transition-new(root) {
+  z-index: 1;
+  animation: page-under .78s cubic-bezier(.45, .05, .2, 1) both;
+}
+
+@keyframes page-turn-left {
+  from { transform: rotateY(0deg); filter: brightness(1); }
+  to   { transform: rotateY(-110deg); filter: brightness(.55); }
+}
+@keyframes page-turn-right {
+  from { transform: rotateY(0deg); filter: brightness(1); }
+  to   { transform: rotateY(110deg); filter: brightness(.55); }
+}
+@keyframes page-under {
+  from { filter: brightness(.6); }
+  to   { filter: brightness(1); }
+}
+
 /* Hero headline: words rise out of their own masks. The mask gets extra
    room above and below (and gives it back with negative margins) so Arabic
    dots and descenders are never clipped. JS only splits without reduced motion. */

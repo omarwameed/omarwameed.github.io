@@ -200,8 +200,32 @@
 
   setTheme(storedTheme());
 
+  /* Language switch turns the page like a notebook. The spine follows the
+     language you are going to: English turns right-to-left (spine on the
+     left), Arabic turns left-to-right (spine on the right). CSS in
+     styles.css reads html[data-flip]. Instant without View Transitions or
+     with reduced motion (reduceMotion is defined just below; hoisted). */
+  var langTarget = null; /* same double-click guard as the theme toggle */
+
   document.getElementById("langBtn").addEventListener("click", function () {
-    apply(document.documentElement.getAttribute("lang") === "en" ? "ar" : "en");
+    var html = document.documentElement;
+    var next = (langTarget || html.getAttribute("lang")) === "en" ? "ar" : "en";
+
+    if (!document.startViewTransition || reduceMotion) {
+      apply(next);
+      return;
+    }
+
+    langTarget = next;
+    html.setAttribute("data-flip", next === "en" ? "ltr" : "rtl");
+    var t = document.startViewTransition(function () { apply(next); });
+    t.finished.then(clear, clear);
+    function clear() {
+      if (langTarget === next) {
+        langTarget = null;
+        html.removeAttribute("data-flip");
+      }
+    }
   });
 
   /* Motion is opt-out for anyone who asked their system for less of it. */
