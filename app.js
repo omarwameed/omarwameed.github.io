@@ -77,7 +77,7 @@
     langLabel: "Languages",
     langValue: "Arabic native, English at B2 level",
 
-    certsTitle: "What I learned, on record",
+    certsTitle: "Certificates",
     cert1Date: "October 2026",
     cert1Body: "A Cisco Networking Academy course on the fundamentals of user support: how to take in a problem, diagnose it step by step, and keep communicating clearly until it's solved.",
     altCert: "Certificate of completion for IT Customer Support Basics from Cisco Networking Academy, awarded to Omar Wameed",
