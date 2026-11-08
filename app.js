@@ -204,9 +204,63 @@
     apply(document.documentElement.getAttribute("lang") === "en" ? "ar" : "en");
   });
 
-  document.getElementById("themeBtn").addEventListener("click", function () {
-    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  /* Motion is opt-out for anyone who asked their system for less of it. */
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Theme switch: the new theme spreads out as a circle from the button.
+     Uses the View Transitions API; browsers without it switch instantly. */
+  /* The theme a pending transition is heading to. The swap itself runs a
+     frame later, so a quick second click must toggle from the target, not
+     from the theme still on screen, or two clicks would land on one switch. */
+  var themeTarget = null;
+
+  document.getElementById("themeBtn").addEventListener("click", function (e) {
+    var current = themeTarget || document.documentElement.getAttribute("data-theme");
+    var next = current === "dark" ? "light" : "dark";
+
+    if (!document.startViewTransition || reduceMotion) {
+      setTheme(next);
+      return;
+    }
+    themeTarget = next;
+
+    var b = e.currentTarget.getBoundingClientRect();
+    var x = b.left + b.width / 2;
+    var y = b.top + b.height / 2;
+    var r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+
+    var t = document.startViewTransition(function () { setTheme(next); });
+    t.finished.then(function () { if (themeTarget === next) themeTarget = null; }, function () {});
+    t.ready.then(function () {
+      document.documentElement.animate(
+        { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + r + "px at " + x + "px " + y + "px)"] },
+        { duration: 560, easing: "cubic-bezier(.2, .7, .3, 1)", pseudoElement: "::view-transition-new(root)" }
+      );
+    }).catch(function () {});
   });
+
+  /* Hero headline: each word rises out of its own mask, once, on load.
+     Splitting happens at spaces only, so Arabic letters inside a word stay
+     joined. A later language switch replaces the text and drops the effect,
+     which is fine: the entrance is for the first impression. */
+  (function () {
+    var h = document.querySelector(".hero-title");
+    if (!h || reduceMotion) return;
+    var words = h.textContent.trim().split(/\s+/);
+    h.textContent = "";
+    words.forEach(function (w, i) {
+      var outer = document.createElement("span");
+      var inner = document.createElement("span");
+      outer.className = "w";
+      inner.className = "wi";
+      inner.style.setProperty("--i", i);
+      inner.textContent = w;
+      outer.appendChild(inner);
+      h.appendChild(outer);
+      if (i < words.length - 1) h.appendChild(document.createTextNode(" "));
+    });
+    h.classList.add("is-split");
+  })();
 
   /* ---------- certificate viewer ----------
      The link still points at the image, so without JS (or without <dialog>
@@ -392,6 +446,28 @@
         if (frame) { cancelAnimationFrame(frame); frame = 0; }
         stamp.classList.remove("is-lit");
         ["--mx", "--my", "--rx", "--ry"].forEach(function (p) { stamp.style.removeProperty(p); });
+      });
+    });
+  }
+
+  /* ---------- gold spotlight on cards ----------
+     A soft glow sits under the pointer on tool cards and contact boxes, so
+     the card you're about to click answers before you click. Mouse only. */
+
+  if (fineHover && !calm) {
+    Array.prototype.forEach.call(document.querySelectorAll(".tool-card a, .cbox"), function (card) {
+      var frame = 0;
+      card.classList.add("glow");
+      card.addEventListener("pointermove", function (e) {
+        var r = card.getBoundingClientRect();
+        var x = e.clientX - r.left;
+        var y = e.clientY - r.top;
+        if (frame) return;
+        frame = requestAnimationFrame(function () {
+          frame = 0;
+          card.style.setProperty("--gx", x.toFixed(0) + "px");
+          card.style.setProperty("--gy", y.toFixed(0) + "px");
+        });
       });
     });
   }

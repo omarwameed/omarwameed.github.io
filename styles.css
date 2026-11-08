@@ -794,6 +794,66 @@ html[lang="en"] .copy { font-family: var(--f-lat); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
+/* Theme switch circle (View Transitions). The browser's default crossfade is
+   turned off so only the circular reveal from app.js plays. */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* Hero headline: words rise out of their own masks. The mask gets extra
+   room above and below (and gives it back with negative margins) so Arabic
+   dots and descenders are never clipped. JS only splits without reduced motion. */
+.hero-copy > .hero-title.is-split { animation: none; }
+.hero-title .w {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-block: .1em .22em;
+  margin-block: -.1em -.22em;
+}
+.hero-title .wi {
+  display: inline-block;
+  transform: translateY(115%);
+  animation: word-up .8s var(--ease) forwards;
+  animation-delay: calc(var(--i) * 70ms + 80ms);
+}
+@keyframes word-up { to { transform: none; } }
+
+/* Scroll depth, CSS only (scroll-driven animations). Desktop two-column
+   layout only, where the image sits beside its text and can drift without
+   touching it. Browsers without support simply keep everything still. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 1001px) {
+    .project-media {
+      animation: depth linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+    .hero .shot-back {
+      animation: drift-up linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 70vh;
+    }
+  }
+}
+@keyframes depth { from { transform: translateY(34px); } to { transform: translateY(-34px); } }
+@keyframes drift-up { to { transform: translateY(-46px); } }
+
+/* Gold spotlight under the pointer (class added by app.js, mouse only).
+   isolation keeps the glow above the card background but under its text. */
+.glow { position: relative; isolation: isolate; }
+.glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(240px circle at var(--gx, 50%) var(--gy, 50%), color-mix(in srgb, var(--gold) 18%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity .3s var(--ease);
+}
+.glow:hover::before { opacity: 1; }
+
 /* ---------------- responsive ---------------- */
 
 @media (max-width: 1000px) {
