@@ -81,6 +81,7 @@
     cert1Date: "October 2026",
     cert1Body: "A Cisco Networking Academy course on the fundamentals of user support: how to take in a problem, diagnose it step by step, and keep communicating clearly until it's solved.",
     altCert: "Certificate of completion for IT Customer Support Basics from Cisco Networking Academy, awarded to Omar Wameed",
+    navDock: "Quick navigation",
     lbAria: "Certificate view",
     lbClose: "Close",
 
@@ -226,6 +227,78 @@
     /* Esc fires "cancel" right away, then closes natively */
     lb.addEventListener("cancel", unlockScroll);
     lb.addEventListener("close", unlockScroll);
+  }
+
+  /* ---------- active section in the top nav and the mobile dock ----------
+     A thin band across the middle of the screen decides which section is
+     "current", so the highlight follows reading position, not page top. */
+
+  var spyLinks = document.querySelectorAll("[data-spy]");
+
+  if ("IntersectionObserver" in window && spyLinks.length) {
+    var setActive = function (id) {
+      Array.prototype.forEach.call(spyLinks, function (a) {
+        var on = a.getAttribute("data-spy") === id;
+        a.classList.toggle("is-active", on);
+        if (on) a.setAttribute("aria-current", "true");
+        else a.removeAttribute("aria-current");
+      });
+    };
+
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) setActive(entry.target.id);
+      });
+    }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+
+    ["projects", "skills", "experience", "certs", "contact"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) spy.observe(el);
+    });
+
+    /* back at the hero: nothing is current */
+    var hero = document.querySelector(".hero");
+    if (hero) {
+      new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting) setActive("");
+      }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 }).observe(hero);
+    }
+  }
+
+  /* ---------- certificate foil + tilt ----------
+     Only for a real mouse, and never with reduced motion. Touch devices get
+     the static sheen from CSS. Pointer events on the card, no scroll work. */
+
+  var fineHover = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (fineHover && !calm) {
+    Array.prototype.forEach.call(document.querySelectorAll(".cert-media"), function (card) {
+      var stamp = card.querySelector(".stamp");
+      if (!stamp) return;
+      var frame = 0;
+
+      card.addEventListener("pointermove", function (e) {
+        var r = stamp.getBoundingClientRect();
+        var x = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+        var y = Math.min(Math.max((e.clientY - r.top) / r.height, 0), 1);
+        if (frame) return;
+        frame = requestAnimationFrame(function () {
+          frame = 0;
+          stamp.style.setProperty("--mx", (x * 100).toFixed(1) + "%");
+          stamp.style.setProperty("--my", (y * 100).toFixed(1) + "%");
+          stamp.style.setProperty("--ry", ((x - 0.5) * 9).toFixed(2) + "deg");
+          stamp.style.setProperty("--rx", ((0.5 - y) * 7).toFixed(2) + "deg");
+          stamp.classList.add("is-lit");
+        });
+      });
+
+      card.addEventListener("pointerleave", function () {
+        if (frame) { cancelAnimationFrame(frame); frame = 0; }
+        stamp.classList.remove("is-lit");
+        ["--mx", "--my", "--rx", "--ry"].forEach(function (p) { stamp.style.removeProperty(p); });
+      });
+    });
   }
 
   /* ---------- scroll reveal (IntersectionObserver, no scroll listener) ---------- */
