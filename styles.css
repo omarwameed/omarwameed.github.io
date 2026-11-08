@@ -451,6 +451,55 @@ html[dir="rtl"] .cert-name { text-align: right; }
 .cert-meta { margin-block-start: 8px; color: var(--accent); font-size: 14.5px; font-weight: 600; }
 .cert-body { margin-block-start: 14px; color: var(--muted); font-size: 15.5px; max-width: 52ch; }
 
+/* certificate viewer (native <dialog>) */
+html.lb-open { overflow: hidden; }
+
+.lightbox {
+  width: min(92vw, 860px);
+  max-width: none;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.lightbox[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  animation: lb-in .22s var(--ease);
+}
+.lightbox::backdrop { background: rgba(8, 10, 13, .82); }
+
+.lightbox img {
+  width: 100%;
+  max-height: calc(92dvh - 60px);
+  object-fit: contain;
+  border-radius: var(--r-md);
+  background: #fff;
+}
+
+.lb-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-inline: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font: 600 15px/1 var(--f-ar);
+  cursor: pointer;
+  transition: border-color .2s var(--ease), color .2s var(--ease), transform .12s var(--ease);
+}
+html[lang="en"] .lb-close { font-family: var(--f-lat); }
+.lb-close:hover { border-color: var(--accent); color: var(--accent); }
+.lb-close:active { transform: translateY(1px); }
+
+@keyframes lb-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+
 /* ---------------- contact ---------------- */
 
 .contact { padding-block: clamp(56px, 8vw, 96px); border-block-start: 1px solid var(--line-soft); }

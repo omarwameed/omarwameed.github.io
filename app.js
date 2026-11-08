@@ -81,6 +81,8 @@
     cert1Date: "October 2026",
     cert1Body: "A Cisco Networking Academy course on the fundamentals of user support: how to take in a problem, diagnose it step by step, and keep communicating clearly until it's solved.",
     altCert: "Certificate of completion for IT Customer Support Basics from Cisco Networking Academy, awarded to Omar Wameed",
+    lbAria: "Certificate view",
+    lbClose: "Close",
 
     contactTitle: "Got a fault or an idea? Message me.",
     contactSub: "Whether you need someone to get the office machines running again, or a developer to join your team and build your system's front-end, reach me any way below.",
@@ -187,6 +189,44 @@
   document.getElementById("themeBtn").addEventListener("click", function () {
     setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
   });
+
+  /* ---------- certificate viewer ----------
+     The link still points at the image, so without JS (or without <dialog>
+     support) it simply opens the file. With JS it opens over the page. */
+
+  var lb = document.getElementById("lightbox");
+  var lbImg = document.getElementById("lbImg");
+
+  /* Unlock directly instead of waiting for the async "close" event, which
+     did not arrive in testing and left the page unable to scroll. */
+  function unlockScroll() { document.documentElement.classList.remove("lb-open"); }
+
+  function closeLightbox() {
+    if (lb.open) lb.close();
+    unlockScroll();
+  }
+
+  if (lb && typeof lb.showModal === "function") {
+    Array.prototype.forEach.call(document.querySelectorAll(".cert-media"), function (link) {
+      link.addEventListener("click", function (e) {
+        var src = link.querySelector("img");
+        e.preventDefault();
+        lbImg.src = link.getAttribute("href");
+        lbImg.alt = src ? src.alt : "";
+        lb.showModal();
+        document.documentElement.classList.add("lb-open");
+      });
+    });
+
+    document.getElementById("lbClose").addEventListener("click", closeLightbox);
+
+    /* a click on the dark area outside the image lands on the dialog itself */
+    lb.addEventListener("click", function (e) { if (e.target === lb) closeLightbox(); });
+
+    /* Esc fires "cancel" right away, then closes natively */
+    lb.addEventListener("cancel", unlockScroll);
+    lb.addEventListener("close", unlockScroll);
+  }
 
   /* ---------- scroll reveal (IntersectionObserver, no scroll listener) ---------- */
 

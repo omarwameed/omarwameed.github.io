@@ -13,7 +13,7 @@
 <link rel="preload" href="fonts/IBMPlexSansArabic-400-arabic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/IBMPlexSansArabic-700-arabic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts/fonts.css">
-<link rel="stylesheet" href="styles.css?v=2026-11-05">
+<link rel="stylesheet" href="styles.css?v=2026-11-08c">
 </head>
 <body>
 
@@ -258,6 +258,15 @@
   </section>
 </main>
 
+<!-- Certificate viewer: opens over the page, closes with the button, Esc, or a click outside -->
+<dialog class="lightbox" id="lightbox" aria-label="عرض الشهادة" data-i18n-aria="lbAria">
+  <button type="button" class="lb-close" id="lbClose">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    <span data-i18n="lbClose">إغلاق</span>
+  </button>
+  <img id="lbImg" src="" alt="">
+</dialog>
+
 <footer class="foot">
   <div class="wrap foot-in">
     <span data-i18n="footName">عمر وميض، دعم تقني ومطوّر واجهات أمامية</span>
@@ -265,6 +274,6 @@
   </div>
 </footer>
 
-<script src="app.js?v=2026-11-08"></script>
+<script src="app.js?v=2026-11-08c"></script>
 </body>
 </html>
