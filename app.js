@@ -578,6 +578,148 @@
     });
   }
 
+  /* ---------- background: gold light ribbon that melts into an aurora ----------
+     Inspired by a reel the user shared (a three.js site with a flowing light
+     ribbon). Rebuilt with plain canvas, no library:
+     - .bg-ribbon: a bundle of thin gold strands with a flare and drifting
+       sparks, drawn sharp, behind the hero.
+     - .bg-aurora: the same ribbon drawn at 1/8 size and blown up with a CSS
+       blur, so the GPU does the softening for free.
+     As the hero scrolls away the ribbon fades out and the aurora fades in
+     (driven by an IntersectionObserver on the hero, no scroll listener).
+     The ribbon bends away from the text column and mirrors with direction.
+     Pauses when the tab is hidden; reduced motion gets one still frame. */
+  (function () {
+    var hero = document.querySelector(".hero");
+    if (!hero || !window.HTMLCanvasElement) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "bg-fx";
+    wrap.setAttribute("aria-hidden", "true");
+    wrap.innerHTML = '<canvas class="bg-aurora"></canvas><canvas class="bg-ribbon"></canvas>';
+    document.body.prepend(wrap);
+
+    var cR = wrap.querySelector(".bg-ribbon"), gR = cR.getContext("2d");
+    var cA = wrap.querySelector(".bg-aurora"), gA = cA.getContext("2d");
+    var small = window.matchMedia("(max-width: 760px)").matches;
+    var dpr = Math.min(small ? 1 : 1.5, window.devicePixelRatio || 1);
+    var strands = small ? 28 : 46;
+    var progress = 0; /* 0 = hero fully in view, 1 = hero gone */
+    var W = 0, H = 0;
+
+    function resize() {
+      W = Math.round(innerWidth * dpr);
+      H = Math.round(innerHeight * dpr);
+      cR.width = W; cR.height = H;
+      cA.width = Math.max(1, W >> 3); cA.height = Math.max(1, H >> 3);
+    }
+    resize();
+    window.addEventListener("resize", function () { resize(); if (calmBg) draw(0); });
+
+    /* Point on the base curve (cubic bezier), u from flare (0) to tail (1).
+       Coordinates are for RTL, where the text is on the right and the
+       screenshots on the left: the flare sits in the gap between the two
+       columns, the bundle runs down that gap and fans out across the open
+       space under the hero, leaving off the left edge. LTR mirrors it. */
+    function curve(u) {
+      var a = 1 - u;
+      var x = a * a * a * 0.53 + 3 * a * a * u * 0.50 + 3 * a * u * u * 0.30 + u * u * u * -0.08;
+      var y = a * a * a * 0.13 + 3 * a * a * u * 0.47 + 3 * a * u * u * 0.80 + u * u * u * 0.92;
+      return [x, y];
+    }
+
+    function ribbon(g, w, h, t, n, lw, extras, dark, boost) {
+      var rtl = document.documentElement.getAttribute("dir") === "rtl";
+      g.save();
+      g.globalCompositeOperation = dark ? "lighter" : "source-over";
+      for (var i = 0; i < n; i++) {
+        var k = i / n - 0.5;
+        var a = Math.min(1, (0.08 + 0.3 * (1 - Math.abs(k) * 1.8)) * (dark ? 1 : 0.75) * (boost || 1));
+        var light = dark ? 60 + (1 - Math.abs(k) * 2) * 22 : 34 + (1 - Math.abs(k) * 2) * 10;
+        g.strokeStyle = "hsla(" + (41 + k * 12) + ",68%," + light + "%," + a + ")";
+        g.lineWidth = lw;
+        g.beginPath();
+        for (var s = 0; s <= 36; s++) {
+          var u = s / 36, p = curve(u);
+          var spread = k * (0.06 + 0.38 * u * u);
+          var x = p[0] + spread + Math.sin(u * 4 + t * 0.7 + k * 5) * 0.018;
+          var y = p[1] + k * 0.05 * u + Math.sin(u * 3 + t * 0.5 + k * 3) * 0.02;
+          if (!rtl) x = 1 - x;
+          if (s) g.lineTo(x * w, y * h); else g.moveTo(x * w, y * h);
+        }
+        g.stroke();
+      }
+      if (extras) {
+        var f = curve(0), fx = (rtl ? f[0] : 1 - f[0]) * w, fy = f[1] * h;
+        var rg = g.createRadialGradient(fx, fy, 0, fx, fy, h * 0.26);
+        rg.addColorStop(0, dark ? "rgba(255,240,205,.85)" : "rgba(216,180,99,.5)");
+        rg.addColorStop(0.25, dark ? "rgba(216,180,99,.3)" : "rgba(216,180,99,.18)");
+        rg.addColorStop(1, "rgba(216,180,99,0)");
+        g.fillStyle = rg;
+        g.fillRect(0, 0, w, h);
+        for (var j = 0; j < 46; j++) {
+          var uu = (j * 0.618 + t * 0.04) % 1, q = curve(uu);
+          var sx = q[0] + Math.sin(j * 12.9) * 0.07, sy = q[1] + Math.sin(j * 7.3 + t) * 0.05;
+          if (!rtl) sx = 1 - sx;
+          g.fillStyle = dark ? "rgba(255,236,190," + (0.25 + 0.5 * Math.abs(Math.sin(t * 2 + j))) + ")"
+                             : "rgba(132,100,29," + (0.2 + 0.35 * Math.abs(Math.sin(t * 2 + j))) + ")";
+          g.fillRect(sx * w, sy * h, 1.6 * dpr, 1.6 * dpr);
+        }
+      }
+      g.restore();
+    }
+
+    /* The aurora is drawn small into a scratch canvas, then copied onto its
+       own canvas through a canvas blur: blurring ~160px is cheap, and the
+       browser's smooth upscale does the rest. (A CSS blur on the full-size
+       canvas cost ~40 frames per second in testing.) It also only needs
+       about 20 updates a second because it drifts slowly. Browsers without
+       canvas filters get the unblurred small drawing, still soft once upscaled. */
+    var scratch = document.createElement("canvas"), gS = scratch.getContext("2d");
+    var tick = 0;
+
+    function draw(t) {
+      var dark = document.documentElement.getAttribute("data-theme") === "dark";
+      var rib = Math.max(0, 1 - progress * 1.4);
+      var aur = Math.min(1, progress * 1.3) * (dark ? 0.9 : 0.6);
+      cR.style.opacity = (rib * (small ? 0.7 : 1)).toFixed(3);
+      cA.style.opacity = aur.toFixed(3);
+      gR.clearRect(0, 0, W, H);
+      if (rib > 0.01) ribbon(gR, W, H, t, strands, dpr, true, dark);
+      if (aur > 0.01 && (tick++ % 3 === 0 || calmBg)) {
+        scratch.width = cA.width; scratch.height = cA.height;
+        ribbon(gS, scratch.width, scratch.height, t * 0.7, 22, 3.2, false, dark, 2.2);
+        gA.clearRect(0, 0, cA.width, cA.height);
+        gA.filter = "blur(3px)";
+        gA.drawImage(scratch, 0, 0);
+        gA.filter = "none";
+      }
+    }
+
+    var calmBg = reduceMotion;
+
+    var thresholds = [];
+    for (var s = 0; s <= 40; s++) thresholds.push(s / 40);
+    new IntersectionObserver(function (entries) {
+      progress = 1 - entries[0].intersectionRatio;
+      if (calmBg) draw(0);
+    }, { threshold: thresholds }).observe(hero);
+
+    if (calmBg) { draw(0); return; }
+
+    var running = true;
+    document.addEventListener("visibilitychange", function () {
+      running = !document.hidden;
+      if (running) requestAnimationFrame(loop);
+    });
+    function loop(now) {
+      if (!running) return;
+      draw(now / 1000);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  })();
+
   /* ---------- scroll reveal (IntersectionObserver, no scroll listener) ---------- */
 
   var reveals = document.querySelectorAll(".reveal");
