@@ -174,6 +174,37 @@
     theme.setAttribute("aria-label", theme.getAttribute("title"));
 
     try { localStorage.setItem("ow.lang", lang); } catch (e) {}
+
+    buildRolls(lang);
+  }
+
+  /* ---------- top menu: letters roll on hover ----------
+     Learned from horizonx.so: each piece sits in a mask with a front copy
+     and a gold copy underneath; on hover both slide up. English rolls
+     letter by letter with a small stagger. Arabic rolls the whole word,
+     because splitting Arabic into letters breaks how they join.
+     Rebuilt after every language switch, since apply() rewrites the text.
+     The link keeps an aria-label so screen readers read the word once. */
+  function buildRolls(lang) {
+    Array.prototype.forEach.call(document.querySelectorAll(".nav-links a"), function (a) {
+      var word = a.textContent.trim();
+      var parts = lang === "en" ? Array.from(word) : [word];
+      a.setAttribute("aria-label", word);
+      a.textContent = "";
+      parts.forEach(function (piece, i) {
+        var mask = document.createElement("span");
+        mask.className = "roll-m";
+        mask.setAttribute("aria-hidden", "true");
+        if (piece === " ") mask.classList.add("roll-space");
+        for (var k = 0; k < 2; k++) {
+          var s = document.createElement("span");
+          s.textContent = piece;
+          s.style.transitionDelay = (i * 18) + "ms";
+          mask.appendChild(s);
+        }
+        a.appendChild(mask);
+      });
+    });
   }
 
   /* ---------- theme ---------- */

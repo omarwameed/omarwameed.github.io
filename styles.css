@@ -175,6 +175,17 @@ li { list-style: none; }
 .nav-links a:hover, .nav-links a.is-active { color: var(--ink); }
 .nav-links a:hover::after, .nav-links a.is-active::after { transform: scaleX(1); }
 
+/* Letter roll (markup built by app.js). Each mask shows one line; the gold
+   copy waits underneath and both slide up on hover or keyboard focus.
+   The mask is taller than the text so Arabic dots and descenders never clip. */
+.nav-links a { display: inline-flex; }
+.roll-m { display: inline-block; overflow: hidden; height: 1.6em; line-height: 1.6em; }
+.roll-m > span { display: block; transition: transform .42s var(--ease); }
+.roll-m > span + span { color: var(--gold); }
+.roll-space { width: .28em; }
+.nav-links a:hover .roll-m > span,
+.nav-links a:focus-visible .roll-m > span { transform: translateY(-100%); }
+
 .nav-tools { display: flex; gap: 8px; margin-inline-start: 4px; }
 
 .tool {
