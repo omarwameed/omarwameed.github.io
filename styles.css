@@ -799,14 +799,13 @@ html[lang="en"] .copy { font-family: var(--f-lat); }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
-/* Background ribbon + aurora (created by app.js). Fixed behind everything;
-   the page background lives on body and paints under it. The aurora canvas
-   is drawn at 1/8 size and pre-blurred in app.js; scaled up a little here
-   so its soft edge never shows at the viewport border. */
-.bg-fx { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
-.bg-fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.bg-aurora { transform: scale(1.12); opacity: 0; }
-.bg-ribbon { opacity: 1; }
+/* Background: liquid gold silk (WebGL canvas created by app.js). Fixed
+   behind everything; body's own background paints under it. The canvas is
+   rendered at reduced resolution and stretched here, which also softens it.
+   Fades in once the first frame is drawn. */
+.bg-fx { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .9s ease; }
+.bg-fx.is-on { opacity: 1; }
+.bg-fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* Language switch terminal (created by app.js). A full-screen navy scene,
    fixed colors in both themes: the command types out, a gold check

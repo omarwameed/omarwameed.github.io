@@ -578,143 +578,159 @@
     });
   }
 
-  /* ---------- background: gold light ribbon that melts into an aurora ----------
-     Inspired by a reel the user shared (a three.js site with a flowing light
-     ribbon). Rebuilt with plain canvas, no library:
-     - .bg-ribbon: a bundle of thin gold strands with a flare and drifting
-       sparks, drawn sharp, behind the hero.
-     - .bg-aurora: the same ribbon drawn at 1/8 size and blown up with a CSS
-       blur, so the GPU does the softening for free.
-     As the hero scrolls away the ribbon fades out and the aurora fades in
-     (driven by an IntersectionObserver on the hero, no scroll listener).
-     The ribbon bends away from the text column and mirrors with direction.
-     Pauses when the tab is hidden; reduced motion gets one still frame. */
+  /* ---------- background: liquid gold silk (WebGL) ----------
+     Chosen by the user after the canvas ribbon read as static. Lessons from
+     getlayers.ai: motion should fill the whole surface and never stop, run
+     on the GPU, answer the mouse, and carry a little film grain.
+     - A full-screen fragment shader: domain-warped noise makes the navy
+       fold like cloth, and thin gold veins run along the folds.
+     - Rendered at reduced resolution and stretched by CSS: cheap and soft.
+     - Calmer once the hero scrolls away (IntersectionObserver, no scroll
+       listener), so long sections stay easy to read.
+     - Light mode: porcelain cloth with darker gold veins.
+     - Pauses in hidden tabs; reduced motion gets one still frame.
+     - No WebGL: nothing is drawn and the plain page background shows. */
   (function () {
     var hero = document.querySelector(".hero");
-    if (!hero || !window.HTMLCanvasElement) return;
+    if (!hero) return;
 
     var wrap = document.createElement("div");
     wrap.className = "bg-fx";
     wrap.setAttribute("aria-hidden", "true");
-    wrap.innerHTML = '<canvas class="bg-aurora"></canvas><canvas class="bg-ribbon"></canvas>';
+    wrap.innerHTML = '<canvas class="bg-silk"></canvas>';
+    var cv = wrap.querySelector("canvas");
+    var gl = cv.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+    if (!gl) return;
     document.body.prepend(wrap);
 
-    var cR = wrap.querySelector(".bg-ribbon"), gR = cR.getContext("2d");
-    var cA = wrap.querySelector(".bg-aurora"), gA = cA.getContext("2d");
-    var small = window.matchMedia("(max-width: 760px)").matches;
-    var dpr = Math.min(small ? 1 : 1.5, window.devicePixelRatio || 1);
-    var strands = small ? 28 : 46;
-    var progress = 0; /* 0 = hero fully in view, 1 = hero gone */
-    var W = 0, H = 0;
+    var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+    var FS = [
+      "precision mediump float;",
+      "uniform vec2 R;uniform float T;uniform vec2 M;uniform float I;uniform float L;uniform float D;uniform float Q;",
+      "float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}",
+      "float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);",
+      " return mix(mix(h(i),h(i+vec2(1.,0.)),u.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),u.x),u.y);}",
+      "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,.6,-.6,.8);",
+      " for(int i=0;i<5;i++){v+=a*n(p);p=r*p*2.;a*=.5;}return v;}",
+      "float field(vec2 p,float t){",
+      " vec2 q=vec2(fbm(p+t*.10),fbm(p+vec2(5.2,1.3)-t*.08));",
+      " vec2 r=vec2(fbm(p+3.5*q+vec2(1.7,9.2)+t*.16),fbm(p+3.5*q+vec2(8.3,2.8)-t*.12));",
+      " return fbm(p+3.5*r);}",
+      "void main(){",
+      " vec2 uv=gl_FragCoord.xy/R;",
+      " vec2 p=(gl_FragCoord.xy-.5*R)/R.y*2.2;",
+      " vec2 m=(M-.5*R)/R.y*2.2;",
+      " float d=length(p-m);p-=(p-m)*.35*exp(-d*d*2.);",
+      " float f=field(p,T);",
+      " float s=pow(1.-abs(sin(f*14.+T*.6)),10.);",
+      " float fold=smoothstep(.3,.9,f), vein=s*smoothstep(.35,.85,f);",
+      /* keep the veins quiet behind the text column (right in RTL, left in LTR);
+         phones stack everything, so they get one even reduction instead */
+      " float side=D>.5?smoothstep(.40,.56,uv.x):1.-smoothstep(.44,.60,uv.x);",
+      " vein*=Q>.5?1.-.65*side:.5;",
+      " vec3 c;",
+      " if(L<.5){",
+      "  vec3 navy=vec3(.035,.06,.13),gold=vec3(.85,.69,.38),cream=vec3(1.,.93,.78);",
+      "  c=mix(navy,navy*1.6+gold*.15,fold);",
+      "  c+=gold*vein*1.1*I+cream*pow(s,3.)*smoothstep(.55,.9,f)*.6*I;",
+      "  c+=(h(gl_FragCoord.xy+fract(T)*100.)-.5)*.045;",
+      "  c*=1.-.35*pow(length(uv-.5)*1.3,2.);",
+      " }else{",
+      "  vec3 base=vec3(.953,.961,.98),shade=vec3(.885,.9,.94),gold=vec3(.52,.39,.11);",
+      "  c=mix(base,shade,fold*.9);",
+      "  c=mix(c,gold,vein*.5*I);",
+      "  c+=(h(gl_FragCoord.xy+fract(T)*100.)-.5)*.025;",
+      " }",
+      " gl_FragColor=vec4(c,1.);",
+      "}"
+    ].join("\n");
 
+    function shader(type, src) {
+      var o = gl.createShader(type);
+      gl.shaderSource(o, src);
+      gl.compileShader(o);
+      return o;
+    }
+    var prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { wrap.remove(); return; }
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var aLoc = gl.getAttribLocation(prog, "a");
+    gl.enableVertexAttribArray(aLoc);
+    gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
+    var uR = gl.getUniformLocation(prog, "R"), uT = gl.getUniformLocation(prog, "T");
+    var uM = gl.getUniformLocation(prog, "M"), uI = gl.getUniformLocation(prog, "I"), uL = gl.getUniformLocation(prog, "L");
+    var uD = gl.getUniformLocation(prog, "D"), uQ = gl.getUniformLocation(prog, "Q");
+
+    var small = window.matchMedia("(max-width: 760px)").matches;
+    var scale = (small ? 0.45 : 0.6) * Math.min(1.5, window.devicePixelRatio || 1);
+    var W = 0, H = 0;
     function resize() {
-      W = Math.round(innerWidth * dpr);
-      H = Math.round(innerHeight * dpr);
-      cR.width = W; cR.height = H;
-      cA.width = Math.max(1, W >> 3); cA.height = Math.max(1, H >> 3);
+      W = Math.max(1, Math.round(innerWidth * scale));
+      H = Math.max(1, Math.round(innerHeight * scale));
+      cv.width = W; cv.height = H;
+      gl.viewport(0, 0, W, H);
     }
     resize();
-    window.addEventListener("resize", function () { resize(); if (calmBg) draw(0); });
 
-    /* Point on the base curve (cubic bezier), u from flare (0) to tail (1).
-       Coordinates are for RTL, where the text is on the right and the
-       screenshots on the left: the flare sits in the gap between the two
-       columns, the bundle runs down that gap and fans out across the open
-       space under the hero, leaving off the left edge. LTR mirrors it. */
-    function curve(u) {
-      var a = 1 - u;
-      var x = a * a * a * 0.53 + 3 * a * a * u * 0.50 + 3 * a * u * u * 0.30 + u * u * u * -0.08;
-      var y = a * a * a * 0.13 + 3 * a * a * u * 0.47 + 3 * a * u * u * 0.80 + u * u * u * 0.92;
-      return [x, y];
+    /* cursor in canvas pixels (origin bottom-left); eases toward the target,
+       and drifts back to a resting spot when the mouse leaves */
+    var mx = W * 0.3, my = H * 0.55, tx = null, ty = null;
+    window.addEventListener("pointermove", function (e) {
+      if (e.pointerType !== "mouse") return;
+      tx = e.clientX * scale; ty = H - e.clientY * scale;
+    }, { passive: true });
+    document.addEventListener("pointerleave", function () { tx = ty = null; });
+
+    var progress = 0;
+    var calm = reduceMotion;
+    var t0 = performance.now();
+
+    function draw(now) {
+      var light = document.documentElement.getAttribute("data-theme") === "light";
+      if (tx === null) { mx += (W * 0.3 - mx) * 0.01; my += (H * 0.55 - my) * 0.01; }
+      else { mx += (tx - mx) * 0.08; my += (ty - my) * 0.08; }
+      gl.uniform2f(uR, W, H);
+      gl.uniform1f(uT, calm ? 12.0 : (now - t0) / 1000);
+      gl.uniform2f(uM, mx, my);
+      gl.uniform1f(uI, 1 - progress * 0.55);
+      gl.uniform1f(uL, light ? 1 : 0);
+      gl.uniform1f(uD, document.documentElement.getAttribute("dir") === "rtl" ? 1 : 0);
+      gl.uniform1f(uQ, small ? 0 : 1);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
-    function ribbon(g, w, h, t, n, lw, extras, dark, boost) {
-      var rtl = document.documentElement.getAttribute("dir") === "rtl";
-      g.save();
-      g.globalCompositeOperation = dark ? "lighter" : "source-over";
-      for (var i = 0; i < n; i++) {
-        var k = i / n - 0.5;
-        var a = Math.min(1, (0.08 + 0.3 * (1 - Math.abs(k) * 1.8)) * (dark ? 1 : 0.75) * (boost || 1));
-        var light = dark ? 60 + (1 - Math.abs(k) * 2) * 22 : 34 + (1 - Math.abs(k) * 2) * 10;
-        g.strokeStyle = "hsla(" + (41 + k * 12) + ",68%," + light + "%," + a + ")";
-        g.lineWidth = lw;
-        g.beginPath();
-        for (var s = 0; s <= 36; s++) {
-          var u = s / 36, p = curve(u);
-          var spread = k * (0.06 + 0.38 * u * u);
-          var x = p[0] + spread + Math.sin(u * 4 + t * 0.7 + k * 5) * 0.018;
-          var y = p[1] + k * 0.05 * u + Math.sin(u * 3 + t * 0.5 + k * 3) * 0.02;
-          if (!rtl) x = 1 - x;
-          if (s) g.lineTo(x * w, y * h); else g.moveTo(x * w, y * h);
-        }
-        g.stroke();
-      }
-      if (extras) {
-        var f = curve(0), fx = (rtl ? f[0] : 1 - f[0]) * w, fy = f[1] * h;
-        var rg = g.createRadialGradient(fx, fy, 0, fx, fy, h * 0.26);
-        rg.addColorStop(0, dark ? "rgba(255,240,205,.85)" : "rgba(216,180,99,.5)");
-        rg.addColorStop(0.25, dark ? "rgba(216,180,99,.3)" : "rgba(216,180,99,.18)");
-        rg.addColorStop(1, "rgba(216,180,99,0)");
-        g.fillStyle = rg;
-        g.fillRect(0, 0, w, h);
-        for (var j = 0; j < 46; j++) {
-          var uu = (j * 0.618 + t * 0.04) % 1, q = curve(uu);
-          var sx = q[0] + Math.sin(j * 12.9) * 0.07, sy = q[1] + Math.sin(j * 7.3 + t) * 0.05;
-          if (!rtl) sx = 1 - sx;
-          g.fillStyle = dark ? "rgba(255,236,190," + (0.25 + 0.5 * Math.abs(Math.sin(t * 2 + j))) + ")"
-                             : "rgba(132,100,29," + (0.2 + 0.35 * Math.abs(Math.sin(t * 2 + j))) + ")";
-          g.fillRect(sx * w, sy * h, 1.6 * dpr, 1.6 * dpr);
-        }
-      }
-      g.restore();
-    }
-
-    /* The aurora is drawn small into a scratch canvas, then copied onto its
-       own canvas through a canvas blur: blurring ~160px is cheap, and the
-       browser's smooth upscale does the rest. (A CSS blur on the full-size
-       canvas cost ~40 frames per second in testing.) It also only needs
-       about 20 updates a second because it drifts slowly. Browsers without
-       canvas filters get the unblurred small drawing, still soft once upscaled. */
-    var scratch = document.createElement("canvas"), gS = scratch.getContext("2d");
-    var tick = 0;
-
-    function draw(t) {
-      var dark = document.documentElement.getAttribute("data-theme") === "dark";
-      var rib = Math.max(0, 1 - progress * 1.4);
-      var aur = Math.min(1, progress * 1.3) * (dark ? 0.9 : 0.6);
-      cR.style.opacity = (rib * (small ? 0.7 : 1)).toFixed(3);
-      cA.style.opacity = aur.toFixed(3);
-      gR.clearRect(0, 0, W, H);
-      if (rib > 0.01) ribbon(gR, W, H, t, strands, dpr, true, dark);
-      if (aur > 0.01 && (tick++ % 3 === 0 || calmBg)) {
-        scratch.width = cA.width; scratch.height = cA.height;
-        ribbon(gS, scratch.width, scratch.height, t * 0.7, 22, 3.2, false, dark, 2.2);
-        gA.clearRect(0, 0, cA.width, cA.height);
-        gA.filter = "blur(3px)";
-        gA.drawImage(scratch, 0, 0);
-        gA.filter = "none";
-      }
-    }
-
-    var calmBg = reduceMotion;
+    window.addEventListener("resize", function () { resize(); if (calm) draw(0); });
 
     var thresholds = [];
-    for (var s = 0; s <= 40; s++) thresholds.push(s / 40);
+    for (var i = 0; i <= 20; i++) thresholds.push(i / 20);
     new IntersectionObserver(function (entries) {
       progress = 1 - entries[0].intersectionRatio;
-      if (calmBg) draw(0);
+      if (calm) draw(0);
     }, { threshold: thresholds }).observe(hero);
 
-    if (calmBg) { draw(0); return; }
+    /* fade in after the first frame so the page never flashes */
+    requestAnimationFrame(function (now) { draw(now); wrap.classList.add("is-on"); });
+
+    if (calm) {
+      new MutationObserver(function () { draw(0); })
+        .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+      return;
+    }
 
     var running = true;
+    cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); running = false; wrap.remove(); });
     document.addEventListener("visibilitychange", function () {
       running = !document.hidden;
       if (running) requestAnimationFrame(loop);
     });
     function loop(now) {
       if (!running) return;
-      draw(now / 1000);
+      draw(now);
       requestAnimationFrame(loop);
     }
     requestAnimationFrame(loop);
