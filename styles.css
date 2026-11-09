@@ -799,21 +799,52 @@ html[lang="en"] .copy { font-family: var(--f-lat); }
 ::view-transition-old(root),
 ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 
-/* Language switch curtains (created by app.js). Navy cloth with a gold
-   leading edge; faint vertical folds so it reads as fabric, not a panel.
-   Resting state is open (off screen); app.js animates them shut and back. */
-.curtain {
+/* Language switch terminal (created by app.js). A full-screen navy scene,
+   fixed colors in both themes: the command types out, a gold check
+   confirms, then it blurs away. Hidden until app.js adds .is-on. */
+.term {
   position: fixed;
-  inset-block: 0;
-  width: 50.5%;
+  inset: 0;
   z-index: 60;
-  pointer-events: none;
-  background:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, .028) 0 2px, transparent 2px 26px),
-    #0b1430;
+  display: none;
+  place-items: center;
+  padding: 24px;
+  background: #0b1430;
+  cursor: pointer;
 }
-.curtain-l { left: 0; border-right: 2px solid #d8b463; transform: translateX(-101%); }
-.curtain-r { right: 0; border-left: 2px solid #d8b463; transform: translateX(101%); }
+.term.is-on { display: grid; }
+.term-box {
+  width: min(100%, 560px);
+  padding: 22px 24px;
+  border: 1px solid #1f2b4a;
+  border-radius: var(--r-lg);
+  background: #0a1124;
+  font: 400 clamp(14px, 2.2vw, 17px)/1.8 var(--f-mono);
+  color: #c8cfdf;
+  text-align: left;
+}
+.term-box p { margin: 0; overflow-wrap: anywhere; }
+.term-prompt { color: #d8b463; }
+.term-path { color: #93a0bb; }
+.term-cmd { color: #edf0f7; }
+.term-caret {
+  display: inline-block;
+  width: .6em;
+  height: 1.05em;
+  margin-inline-start: 2px;
+  vertical-align: -.15em;
+  background: #d8b463;
+  animation: caret-blink 1s steps(2, start) infinite;
+}
+/* Arabic needs its own face here: the mono fonts have no Arabic glyphs, and
+   if the generic "monospace" comes first the browser grabs an old fallback.
+   So the Arabic font sits before the generic family. */
+.term-out {
+  color: #d8b463;
+  margin-block-start: 6px !important;
+  font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "IBM Plex Sans Arabic", monospace;
+}
+@keyframes caret-blink { to { visibility: hidden; } }
 
 /* Hero headline: words rise out of their own masks. The mask gets extra
    room above and below (and gives it back with negative margins) so Arabic

@@ -200,24 +200,37 @@
 
   setTheme(storedTheme());
 
-  /* Language switch: two navy curtains with gold edges close from the sides,
-     the language swaps behind them, then they open. Chosen by the user over
-     ten options. Clicks during the curtain are ignored, so a double click
-     can't leave the page half switched. Instant with reduced motion
-     (reduceMotion is defined just below; var is hoisted). */
-  var curtainBusy = false;
-  var curtains = null;
+  /* Language switch as a terminal command (chosen by the user from 28 demos).
+     A navy screen types `lang --set en`, prints a confirmation, the page
+     swaps behind it, and the screen blurs away.
+     - First switch in a visit plays the full scene (~2.6s); later ones are a
+       quicker cut (~1.3s) so switching back and forth never feels like waiting.
+     - A click or any key during the scene skips straight to the result.
+     - Clicks on the language button during the scene are ignored.
+     - Instant with reduced motion (reduceMotion is defined below; hoisted).
+     The command and status lines are fixed strings on purpose: they are
+     part of the scene, like a logo, not UI copy that needs translating. */
+  var termBusy = false;
+  var term = null;
 
-  function getCurtains() {
-    if (curtains) return curtains;
-    curtains = ["curtain-l", "curtain-r"].map(function (side) {
-      var el = document.createElement("div");
-      el.className = "curtain " + side;
-      el.setAttribute("aria-hidden", "true");
-      document.body.appendChild(el);
-      return el;
-    });
-    return curtains;
+  function getTerm() {
+    if (term) return term;
+    var el = document.createElement("div");
+    el.className = "term";
+    el.setAttribute("role", "status");
+    el.innerHTML =
+      '<div class="term-box" dir="ltr">' +
+        '<p class="term-line"><span class="term-prompt">omar@portfolio</span><span class="term-path">:~$</span> <span class="term-cmd"></span><span class="term-caret" aria-hidden="true"></span></p>' +
+        '<p class="term-out" dir="auto"></p>' +
+      "</div>";
+    document.body.appendChild(el);
+    term = {
+      root: el,
+      cmd: el.querySelector(".term-cmd"),
+      caret: el.querySelector(".term-caret"),
+      out: el.querySelector(".term-out")
+    };
+    return term;
   }
 
   document.getElementById("langBtn").addEventListener("click", function () {
@@ -227,30 +240,74 @@
       apply(next);
       return;
     }
-    if (curtainBusy) return;
-    curtainBusy = true;
+    if (termBusy) return;
+    termBusy = true;
 
-    var c = getCurtains();
-    var shut = function (el, from) {
-      return el.animate([{ transform: "translateX(" + from + ")" }, { transform: "translateX(0)" }],
-        { duration: 380, easing: "cubic-bezier(.6, 0, .3, 1)", fill: "forwards" }).finished;
-    };
-    var open = function (el, to) {
-      return el.animate([{ transform: "translateX(0)" }, { transform: "translateX(" + to + ")" }],
-        { duration: 480, easing: "cubic-bezier(.2, .7, .3, 1)", fill: "forwards" }).finished;
-    };
+    var seen = false;
+    try { seen = sessionStorage.getItem("ow.termSeen") === "1"; sessionStorage.setItem("ow.termSeen", "1"); } catch (e) {}
+    var pace = seen
+      ? { type: 22, beforeOut: 90, hold: 320, fade: 360 }
+      : { type: 58, beforeOut: 260, hold: 760, fade: 520 };
 
-    Promise.all([shut(c[0], "-101%"), shut(c[1], "101%")])
-      .then(function () {
-        apply(next);
-        return new Promise(function (r) { setTimeout(r, 140); });
-      })
-      .then(function () { return Promise.all([open(c[0], "-101%"), open(c[1], "101%")]); })
-      .then(function () {
-        /* drop the finished animations; the CSS resting state is "open" */
-        c.forEach(function (el) { el.getAnimations().forEach(function (a) { a.cancel(); }); });
-        curtainBusy = false;
-      }, function () { curtainBusy = false; });
+    var t = getTerm();
+    var command = "lang --set " + next;
+    var message = next === "en" ? "✓ switching to English" : "✓ جاري التحويل للعربية";
+    var skipped = false;
+    var swapped = false;
+    var timers = [];
+    var later = function (fn, ms) { timers.push(setTimeout(fn, ms)); };
+
+    t.cmd.textContent = "";
+    t.out.textContent = "";
+    t.out.style.opacity = "0";
+    t.caret.style.display = "";
+    t.root.classList.add("is-on");
+    t.root.getAnimations().forEach(function (a) { a.cancel(); });
+    t.root.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: "ease-out", fill: "forwards" });
+
+    var swap = function () { if (!swapped) { swapped = true; apply(next); } };
+
+    var finish = function () {
+      timers.forEach(clearTimeout);
+      swap();
+      t.root.removeEventListener("pointerdown", skip);
+      document.removeEventListener("keydown", skip, true);
+      t.root.animate([{ opacity: 1, filter: "blur(0)" }, { opacity: 0, filter: "blur(8px)" }],
+        { duration: skipped ? 220 : pace.fade, easing: "ease-in", fill: "forwards" })
+        .finished.then(done, done);
+    };
+    var done = function () {
+      t.root.classList.remove("is-on");
+      t.root.getAnimations().forEach(function (a) { a.cancel(); });
+      termBusy = false;
+    };
+    var skip = function () {
+      if (skipped) return;
+      skipped = true;
+      t.cmd.textContent = command;
+      t.out.textContent = message;
+      t.out.style.opacity = "1";
+      finish();
+    };
+    t.root.addEventListener("pointerdown", skip);
+    document.addEventListener("keydown", skip, true);
+
+    /* type the command one character at a time */
+    var at = 280;
+    for (var i = 1; i <= command.length; i++) {
+      (function (n) { later(function () { t.cmd.textContent = command.slice(0, n); }, at); })(i);
+      at += pace.type;
+    }
+    at += pace.beforeOut;
+    later(function () {
+      t.caret.style.display = "none";
+      t.out.textContent = message;
+      t.out.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }],
+        { duration: 260, easing: "ease-out", fill: "forwards" });
+      swap();
+    }, at);
+    at += pace.hold;
+    later(finish, at);
   });
 
   /* Motion is opt-out for anyone who asked their system for less of it. */
