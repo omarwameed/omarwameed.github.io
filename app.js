@@ -7,8 +7,8 @@
   /* ---------- copy ---------- */
 
   var EN = {
-    docTitle: "Omar Wameed | IT Technical Support & Front-End Developer",
-    docDesc: "Omar Wameed, IT technical support and front-end developer. Gets machines working again, and builds bilingual business systems you can try right now.",
+    docTitle: "Omar Wameed | IT Technical Support, Coordinator & Front-End Developer",
+    docDesc: "Omar Wameed, IT technical support, coordinator and front-end developer. Gets machines working again, coordinates meetings, and builds bilingual business systems you can try right now.",
 
     skip: "Skip to projects",
     brandName: "Omar Wameed",
@@ -21,7 +21,7 @@
 
     heroName: "Omar Wameed",
     heroTitle: "From the user's screen to the line of code.",
-    heroSub: "IT support and front-end developer. I get your machine working again, and build bilingual business systems that are live right now.",
+    heroSub: "IT support, coordinator and front-end developer. I fix machines, coordinate meetings, and build bilingual business systems that are live now.",
     ctaProjects: "Try the projects",
     ctaCv: "Download CV",
 
@@ -52,6 +52,8 @@
     skillsTitle: "The toolkit",
     sk0: "Technical support and hardware",
     sk0v: "Printer setup and troubleshooting, computer hardware diagnostics, IT issue resolution for staff, Microsoft Office",
+    sk6: "Coordination and organization",
+    sk6v: "Meeting coordination (technical and non-technical), event and workshop support, scheduling and follow-up, cross-team communication",
     sk1: "Front-end development",
     sk2: "Architecture and state",
     sk2v: "Component based architecture, reusable components, Zustand",
@@ -61,6 +63,8 @@
     sk4v: "Prompt engineering, coding and debugging with Claude, ChatGPT and Gemini",
     sk5: "Tools",
     sk5v: "Git, GitHub, browser dev tools, deployment on Cloudflare, Vercel and Netlify",
+    sk7: "Databases (working knowledge)",
+    sk7v: "SQL, PostgreSQL (cloud-hosted)",
 
     expTitle: "Where I've worked",
     e1Meta: "Freelance",
@@ -68,7 +72,7 @@
     e1Desc: "Took a loyalty-system idea for an accessories store and delivered the full front-end: dashboards, customer management and points, all built from components that get reused, not rewritten.",
     e2Meta: "6 months",
     e2Role: "IT Help Desk Support, Darjah Recruitment Company",
-    e2Desc: "The first call when a computer freezes or a printer jams. Diagnosed hardware and software faults for staff, set up and maintained the office printers, and helped develop and support the company's ERP system. At the Graphic Design and Career Path Orientation workshops, I was the technical support that kept each session running without a stop.",
+    e2Desc: "The first call when a computer freezes or a printer jams. Diagnosed hardware and software faults for staff, set up and maintained the office printers, and helped develop and support the company's ERP system. Organized and coordinated company meetings, technical and non-technical, from scheduling to follow-up, and assisted with company events and the preparation of training programs and workshops. At the Graphic Design and Career Path Orientation workshops, I was the technical support that kept each session running without a stop.",
     e3Meta: "Instagram store",
     e3Role: "Customer Support Representative",
     e3Desc: "Every day in Instagram DMs: how much is it, is it in stock, where's my order. Every message got a clear answer, and every issue reached a fix.",
@@ -107,7 +111,7 @@
     cEmail: "Email",
     cPhone: "WhatsApp",
 
-    footName: "Omar Wameed, IT Technical Support & Front-End Developer",
+    footName: "Omar Wameed, IT Technical Support, Coordinator & Front-End Developer",
     footPlace: "Baghdad, Iraq"
   };
 
