@@ -71,7 +71,7 @@
     e1Role: "Front-End Developer, Customer Loyalty Platform",
     e1Desc: "Took a loyalty-system idea for an accessories store and delivered the full front-end: dashboards, customer management and points, all built from components that get reused, not rewritten.",
     e2Meta: "6 months",
-    e2Role: "IT Help Desk Support, Darjah Recruitment Company",
+    e2Role: "IT Technical Support, Darjah Recruitment Company",
     e2Desc: "The first call when a computer freezes or a printer jams. Diagnosed hardware and software faults for staff, set up and maintained the office printers, and helped develop and support the company's ERP system. Organized and coordinated company meetings, technical and non-technical, from scheduling to follow-up, and assisted with company events and the preparation of training programs and workshops. At the Graphic Design and Career Path Orientation workshops, I was the technical support that kept each session running without a stop.",
     e3Meta: "Instagram store",
     e3Role: "Customer Support Representative",
