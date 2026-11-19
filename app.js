@@ -609,18 +609,21 @@
     });
   }
 
-  /* ---------- background: liquid gold silk (WebGL) ----------
-     Chosen by the user after the canvas ribbon read as static. Lessons from
-     getlayers.ai: motion should fill the whole surface and never stop, run
-     on the GPU, answer the mouse, and carry a little film grain.
-     - A full-screen fragment shader: domain-warped noise makes the navy
-       fold like cloth, and thin gold veins run along the folds.
-     - Rendered at reduced resolution and stretched by CSS: cheap and soft.
-     - Calmer once the hero scrolls away (IntersectionObserver, no scroll
-       listener), so long sections stay easy to read.
-     - Light mode: porcelain cloth with darker gold veins.
-     - Pauses in hidden tabs; reduced motion gets one still frame.
-     - No WebGL: nothing is drawn and the plain page background shows. */
+  /* ---------- background: liquid gold silk (WebGL), Fable's mix 64 ----------
+     Picked by the user from ten mixes designed by Fable. Navy cloth folds
+     slowly; gold only appears as narrow metallic filaments on the fold
+     ridges and thin veins, so the colour never turns muddy.
+     Phone-safe by design (the previous shader broke on phones):
+     - highp whenever the GPU supports it (mediump on phones is ~16-bit and
+       collapsed the old sin()-based noise into blocks or nothing);
+     - a sin-free hash that stays stable even in mediump;
+     - time wraps every 15 minutes so values never grow large;
+     - no film grain: a +-0.5/255 ordered dither hides banding instead;
+     - the cloth drifts on its own, so touch screens see motion too.
+     Also: veins calm behind the text column (right in RTL, left in LTR),
+     evenly calmer on phones, calmer after the hero, porcelain in light
+     mode, reduced resolution, pauses in hidden tabs, one still frame with
+     reduced motion, nothing drawn without WebGL. */
   (function () {
     var hero = document.querySelector(".hero");
     if (!hero) return;
@@ -630,49 +633,65 @@
     wrap.setAttribute("aria-hidden", "true");
     wrap.innerHTML = '<canvas class="bg-silk"></canvas>';
     var cv = wrap.querySelector("canvas");
-    var gl = cv.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" });
+    var opts = { antialias: false, alpha: false, depth: false, stencil: false, powerPreference: "low-power" };
+    var gl = cv.getContext("webgl", opts) || cv.getContext("experimental-webgl", opts);
     if (!gl) return;
     document.body.prepend(wrap);
 
     var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
     var FS = [
+      "#ifdef GL_FRAGMENT_PRECISION_HIGH",
+      "precision highp float;",
+      "#else",
       "precision mediump float;",
+      "#endif",
       "uniform vec2 R;uniform float T;uniform vec2 M;uniform float I;uniform float L;uniform float D;uniform float Q;",
-      "float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}",
-      "float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*(3.-2.*f);",
-      " return mix(mix(h(i),h(i+vec2(1.,0.)),u.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),u.x),u.y);}",
-      "float fbm(vec2 p){float v=0.,a=.5;mat2 r=mat2(.8,.6,-.6,.8);",
-      " for(int i=0;i<5;i++){v+=a*n(p);p=r*p*2.;a*=.5;}return v;}",
-      "float field(vec2 p,float t){",
-      " vec2 q=vec2(fbm(p+t*.10),fbm(p+vec2(5.2,1.3)-t*.08));",
-      " vec2 r=vec2(fbm(p+3.5*q+vec2(1.7,9.2)+t*.16),fbm(p+3.5*q+vec2(8.3,2.8)-t*.12));",
-      " return fbm(p+3.5*r);}",
+      "const vec3 NAVY=vec3(0.039,0.067,0.141);",
+      "const vec3 SURF=vec3(0.059,0.098,0.192);",
+      "const vec3 GOLD=vec3(0.847,0.706,0.388);",
+      "const vec3 CREAM=vec3(1.0,0.925,0.745);",
+      "const vec3 BRONZE=vec3(0.50,0.35,0.13);",
+      "vec3 goldramp(float a){vec3 c=mix(BRONZE,GOLD,smoothstep(0.0,0.6,a));return mix(c,CREAM,smoothstep(0.55,1.0,a));}",
+      /* gold light rolls off softly: dim gold stays saturated, bright gold ends at cream, never white */
+      "vec3 glight(vec3 base,float l){l=max(l,0.0);float a=1.0-exp(-l);return base*(1.0-a*0.9)+goldramp(a)*a;}",
+      "float b2(vec2 p){return mod(2.0*p.x+3.0*p.y,4.0);}",
+      "float bayer(vec2 p){p=floor(p);return (4.0*b2(mod(p,2.0))+b2(mod(floor(p*0.5),2.0)))/16.0;}",
+      "float hash21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
+      "float vnoise(vec2 p){vec2 i=floor(p);vec2 f=fract(p);f=f*f*(3.0-2.0*f);",
+      " float a=hash21(i);float b=hash21(i+vec2(1.0,0.0));float c=hash21(i+vec2(0.0,1.0));float d=hash21(i+vec2(1.0,1.0));",
+      " return mix(mix(a,b,f.x),mix(c,d,f.x),f.y);}",
+      "float fbm4(vec2 p){float v=0.0;float a=0.5;mat2 m=mat2(0.8,0.6,-0.6,0.8);",
+      " for(int i=0;i<4;i++){v+=a*vnoise(p);p=m*p*2.0+vec2(1.7,9.2);a*=0.5;}return v;}",
+      "float fbm5(vec2 p){float v=0.0;float a=0.5;mat2 m=mat2(0.8,0.6,-0.6,0.8);",
+      " for(int i=0;i<5;i++){v+=a*vnoise(p);p=m*p*2.0+vec2(1.7,9.2);a*=0.5;}return v;}",
       "void main(){",
-      " vec2 uv=gl_FragCoord.xy/R;",
-      " vec2 p=(gl_FragCoord.xy-.5*R)/R.y*2.2;",
-      " vec2 m=(M-.5*R)/R.y*2.2;",
-      " float d=length(p-m);p-=(p-m)*.35*exp(-d*d*2.);",
-      " float f=field(p,T);",
-      " float s=pow(1.-abs(sin(f*14.+T*.6)),10.);",
-      " float fold=smoothstep(.3,.9,f), vein=s*smoothstep(.35,.85,f);",
-      /* keep the veins quiet behind the text column (right in RTL, left in LTR);
-         phones stack everything, so they get one even reduction instead */
-      " float side=D>.5?smoothstep(.40,.56,uv.x):1.-smoothstep(.44,.60,uv.x);",
-      " vein*=Q>.5?1.-.65*side:.5;",
-      " vec3 c;",
-      " if(L<.5){",
-      "  vec3 navy=vec3(.035,.06,.13),gold=vec3(.85,.69,.38),cream=vec3(1.,.93,.78);",
-      "  c=mix(navy,navy*1.6+gold*.15,fold);",
-      "  c+=gold*vein*1.1*I+cream*pow(s,3.)*smoothstep(.55,.9,f)*.6*I;",
-      "  c+=(h(gl_FragCoord.xy+fract(T)*100.)-.5)*.045;",
-      "  c*=1.-.35*pow(length(uv-.5)*1.3,2.);",
+      " vec2 uv=(gl_FragCoord.xy*2.0-R)/R.y;float asp=R.x/R.y;",
+      /* mirror for LTR so the busy side always sits away from the text */
+      " if(D<0.5)uv.x=-uv.x;",
+      /* phones show a narrow slice of the cloth, so zoom out there to fit more filaments in */
+      " vec2 p=uv*(Q>0.5?1.1:1.75)+vec2(0.45,0.0);",
+      " float t=T*0.09;",
+      " vec2 q=vec2(fbm4(p+vec2(t,t*0.7)),fbm4(p+vec2(5.2,1.3)-vec2(t*0.8,t*0.5)));",
+      " vec2 r=vec2(fbm4(p+3.2*q+vec2(1.7,9.2)+M*0.3),fbm4(p+3.2*q+vec2(8.3,2.8)-M.yx*0.2));",
+      " float f=fbm5(p+2.4*r);",
+      " float fn=smoothstep(0.2,0.78,f);",
+      " float ridge=exp(-pow((f-0.58)/0.03,2.0))*0.8;",
+      " float glint=exp(-pow((f-0.76)/0.028,2.0))*2.2;",
+      " float v=r.x*4.0+r.y*1.5;",
+      " float vein=smoothstep(0.13,0.0,abs(fract(v)-0.5))*smoothstep(0.3,0.55,f);",
+      " float l=ridge+glint+vein*0.8;",
+      " l*=Q>0.5?mix(1.0,0.22,smoothstep(-asp*0.25,asp*0.9,uv.x)):0.85;",
+      " l*=I;",
+      " vec3 col;",
+      " if(L<0.5){",
+      "  vec3 base=mix(NAVY*0.5,SURF*1.35,fn)*mix(1.0,0.7,smoothstep(0.0,asp,uv.x));",
+      "  col=glight(base,l);",
       " }else{",
-      "  vec3 base=vec3(.953,.961,.98),shade=vec3(.885,.9,.94),gold=vec3(.52,.39,.11);",
-      "  c=mix(base,shade,fold*.9);",
-      "  c=mix(c,gold,vein*.5*I);",
-      "  c+=(h(gl_FragCoord.xy+fract(T)*100.)-.5)*.025;",
+      "  vec3 base=mix(vec3(0.953,0.961,0.98),vec3(0.885,0.9,0.94),fn*0.9);",
+      "  col=mix(base,vec3(0.52,0.39,0.11),clamp(l*0.32,0.0,0.6));",
       " }",
-      " gl_FragColor=vec4(c,1.);",
+      " col=clamp(col,0.0,1.0)+(bayer(gl_FragCoord.xy)-0.5)/255.0;",
+      " gl_FragColor=vec4(col,1.0);",
       "}"
     ].join("\n");
 
@@ -698,36 +717,45 @@
     var uD = gl.getUniformLocation(prog, "D"), uQ = gl.getUniformLocation(prog, "Q");
 
     var small = window.matchMedia("(max-width: 760px)").matches;
-    var scale = (small ? 0.45 : 0.6) * Math.min(1.5, window.devicePixelRatio || 1);
-    var W = 0, H = 0;
-    function resize() {
+    var scale = (small ? 0.5 : 0.6) * Math.min(1.5, window.devicePixelRatio || 1);
+    var W = 0, H = 0, lastW = 0, lastH = 0;
+    function resize(force) {
+      /* phones fire resize while the address bar slides; only reallocate on a
+         real change (width, or height by more than ~120px) */
+      if (!force && innerWidth === lastW && Math.abs(innerHeight - lastH) < 120) return;
+      lastW = innerWidth; lastH = innerHeight;
       W = Math.max(1, Math.round(innerWidth * scale));
       H = Math.max(1, Math.round(innerHeight * scale));
       cv.width = W; cv.height = H;
       gl.viewport(0, 0, W, H);
     }
-    resize();
+    resize(true);
 
-    /* cursor in canvas pixels (origin bottom-left); eases toward the target,
-       and drifts back to a resting spot when the mouse leaves */
-    var mx = W * 0.3, my = H * 0.55, tx = null, ty = null;
+    /* mouse in -1..1 (y up), eased; when idle for 2s (or on touch screens,
+       which never send mouse moves) the cloth drifts on its own */
+    var mx = 0, my = 0, tx = 0, ty = 0, lastMove = -1e9;
     window.addEventListener("pointermove", function (e) {
       if (e.pointerType !== "mouse") return;
-      tx = e.clientX * scale; ty = H - e.clientY * scale;
+      tx = e.clientX / innerWidth * 2 - 1;
+      ty = -(e.clientY / innerHeight * 2 - 1);
+      lastMove = performance.now();
     }, { passive: true });
-    document.addEventListener("pointerleave", function () { tx = ty = null; });
 
     var progress = 0;
     var calm = reduceMotion;
-    var t0 = performance.now();
+    var t0 = performance.now(), prev = t0;
 
     function draw(now) {
       var light = document.documentElement.getAttribute("data-theme") === "light";
-      if (tx === null) { mx += (W * 0.3 - mx) * 0.01; my += (H * 0.55 - my) * 0.01; }
-      else { mx += (tx - mx) * 0.08; my += (ty - my) * 0.08; }
+      var t = (now - t0) / 1000;
+      var dt = Math.min(0.05, Math.max(0, (now - prev) / 1000)); prev = now;
+      var idle = now - lastMove > 2000;
+      if (idle) { tx = Math.sin(t * 0.19) * 0.6; ty = Math.cos(t * 0.14) * 0.45; }
+      var k = 1 - Math.exp(-dt * (idle ? 1.2 : 4.5));
+      mx += (tx - mx) * k; my += (ty - my) * k;
       gl.uniform2f(uR, W, H);
-      gl.uniform1f(uT, calm ? 12.0 : (now - t0) / 1000);
-      gl.uniform2f(uM, mx, my);
+      gl.uniform1f(uT, calm ? 11.0 : t % 900);
+      gl.uniform2f(uM, calm ? 0.25 : mx, calm ? 0.1 : my);
       gl.uniform1f(uI, 1 - progress * 0.55);
       gl.uniform1f(uL, light ? 1 : 0);
       gl.uniform1f(uD, document.documentElement.getAttribute("dir") === "rtl" ? 1 : 0);
@@ -735,7 +763,7 @@
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
-    window.addEventListener("resize", function () { resize(); if (calm) draw(0); });
+    window.addEventListener("resize", function () { resize(false); if (calm) draw(performance.now()); });
 
     var thresholds = [];
     for (var i = 0; i <= 20; i++) thresholds.push(i / 20);
