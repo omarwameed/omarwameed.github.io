@@ -63,7 +63,7 @@
     sk4v: "Prompt engineering, coding and debugging with Claude, ChatGPT and Gemini",
     sk5: "Tools",
     sk5v: "Git, GitHub, browser dev tools, deployment on Cloudflare, Vercel and Netlify",
-    sk7: "Databases (working knowledge)",
+    sk7: "Databases",
     sk7v: "SQL, PostgreSQL (cloud-hosted)",
 
     expTitle: "Where I've worked",
